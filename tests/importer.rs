@@ -76,3 +76,11 @@ fn comment() {
     assert!(importer.comments.len() == 1);
     assert!(importer.comments[0].as_slice() == "comment");
 }
+
+#[test]
+fn test_invalid_vert() {
+    let mut importer = TestImporter::new();
+    obj::read_obj(str_reader("v 0 0"), &mut importer);
+    assert!(importer.errors.len() == 1);
+    assert!(importer.verts.is_empty());
+}
