@@ -1,4 +1,4 @@
-extern crate "bishop-obj" as obj;
+extern crate "wavefront_obj" as obj;
 
 use std::io::BufReader;
 use obj::CallbackResult;

@@ -1,5 +1,5 @@
 [package]
 
-name = "bishop-obj"
+name = "wavefront_obj"
 version = "0.0.1"
 authors = ["Nicholas Bishop <nicholasbishop@gmail.com>"]
