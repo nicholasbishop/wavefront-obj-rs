@@ -12,6 +12,7 @@ pub enum CallbackResult {
 pub struct Error<'a> {
     pub line: &'a String,
     pub line_number: uint,
+    // TODO(bishop): should probably be an enum
     pub message: &'static str
 }
 
