@@ -87,9 +87,7 @@ fn read_obj_line<Real: FromStr>(line: String, importer: &mut Importer<Real>,
 
 pub fn read_obj<R: Reader, Real: FromStr>(reader: R,
                                           importer: &mut Importer<Real>) {
-    let mut line_num = 1;
-    for line in BufferedReader::new(reader).lines() {
-        read_obj_line(line.unwrap(), importer, line_num);
-        line_num += 1;
+    for (line_index, line) in BufferedReader::new(reader).lines().enumerate() {
+        read_obj_line(line.unwrap(), importer, line_index + 1);
     }
 }

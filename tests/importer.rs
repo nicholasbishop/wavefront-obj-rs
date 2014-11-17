@@ -5,7 +5,7 @@ use obj::CallbackResult;
 
 struct TestImporter {
     comments: Vec<String>,
-    errors: Vec<(String, uint, &'static str)>,
+    errors: Vec<uint>,
 
     verts: Vec<(f32, f32, f32, Option<f32>)>
 }
@@ -27,7 +27,7 @@ impl obj::Importer<f32> for TestImporter  {
     }
 
     fn error(&mut self, error: obj::Error) -> CallbackResult {
-        self.errors.push((error.line.clone(), error.line_number, error.message));
+        self.errors.push(error.line_number);
         obj::Continue
     }
 
@@ -55,4 +55,16 @@ f 1 2 3
     assert!(importer.verts[0] == (0.0, 0.0, 0.0, None));
     assert!(importer.verts[1] == (1.0, 0.0, 0.0, None));
     assert!(importer.verts[2] == (0.0, 1.0, 0.0, None));
+}
+
+#[test]
+fn errors() {
+    let input = r"invalid
+invalid
+";
+    let mut importer = TestImporter::new();
+    obj::read_obj(str_reader(input), &mut importer);
+    assert!(importer.errors.len() == 2);
+    assert!(importer.errors[0] == 1);
+    assert!(importer.errors[1] == 2);
 }
