@@ -1,4 +1,5 @@
 #![feature(if_let)]
+#![feature(slicing_syntax)]
 
 use std::io::BufferedReader;
 use std::from_str::FromStr;
@@ -26,7 +27,7 @@ impl<'a> Error<'a> {
 }
 
 pub trait Importer<Real> {
-    fn comment(&mut self, _line: &String) -> CallbackResult {
+    fn comment(&mut self, _line: &str) -> CallbackResult {
         Continue
     }
 
@@ -50,7 +51,7 @@ fn read_real<Real: FromStr>(word: Option<&str>) -> Option<Real> {
 fn read_obj_line<Real: FromStr>(line: String, importer: &mut Importer<Real>,
                        line_num: uint) {
     if line.starts_with("#") {
-        importer.comment(&line);
+        importer.comment(line[1..]);
     } else {
         let mut words = line.words();
 

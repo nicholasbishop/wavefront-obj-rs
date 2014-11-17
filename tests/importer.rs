@@ -21,8 +21,8 @@ impl TestImporter {
 }
 
 impl obj::Importer<f32> for TestImporter  {
-    fn comment(&mut self, line: &String) -> CallbackResult {
-        self.comments.push(line.clone());
+    fn comment(&mut self, line: &str) -> CallbackResult {
+        self.comments.push(line.to_string());
         obj::Continue
     }
 
@@ -67,4 +67,12 @@ invalid
     assert!(importer.errors.len() == 2);
     assert!(importer.errors[0] == 1);
     assert!(importer.errors[1] == 2);
+}
+
+#[test]
+fn comment() {
+    let mut importer = TestImporter::new();
+    obj::read_obj(str_reader("#comment"), &mut importer);
+    assert!(importer.comments.len() == 1);
+    assert!(importer.comments[0].as_slice() == "comment");
 }
