@@ -15,7 +15,8 @@ pub struct Error<'a> {
 }
 
 impl<'a> Error<'a> {
-    fn new(line: &'a String, line_number: uint, message: &'static str) -> Error<'a> {
+    fn new(line: &'a String, line_number: uint,
+           message: &'static str) -> Error<'a> {
         Error {
             line: line,
             line_number: line_number,
@@ -64,8 +65,9 @@ fn read_obj_line<Real: FromStr>(line: String, importer: &mut Importer<Real>,
                             let ow = read_real::<Real>(words.next());
                             let junk = words.next();
                             if junk.is_some() {
-                                importer.error(Error::new(&line, line_num,
-                                                          "junk at end of line"));
+                                importer.error(
+                                    Error::new(&line, line_num,
+                                               "junk at end of line"));
                             } else {
                                 importer.v(x, y, z, ow);
                             }
