@@ -29,16 +29,16 @@ impl<'a> Error<'a> {
 
 pub trait Importer<Real> {
     fn comment(&mut self, _line: &str) -> CallbackResult {
-        Continue
+        CallbackResult::Continue
     }
 
     fn error(&mut self, _error: Error) -> CallbackResult {
-        Continue
+        CallbackResult::Continue
     }
 
     fn v(&mut self, _x: Real, _y: Real, _z: Real,
          _w: Option<Real>) -> CallbackResult {
-        Continue
+        CallbackResult::Continue
     }
 }
 
