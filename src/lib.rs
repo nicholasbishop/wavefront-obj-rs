@@ -2,7 +2,7 @@
 #![feature(slicing_syntax)]
 
 use std::io::BufferedReader;
-use std::from_str::FromStr;
+use std::str::FromStr;
 
 pub enum CallbackResult {
     Continue,
