@@ -7,7 +7,8 @@ struct TestImporter {
     comments: Vec<String>,
     errors: Vec<uint>,
 
-    verts: Vec<(f32, f32, f32, Option<f32>)>
+    verts: Vec<(f32, f32, f32, Option<f32>)>,
+    faces: Vec<Vec<u32>>
 }
 
 impl TestImporter {
@@ -15,12 +16,13 @@ impl TestImporter {
         TestImporter {
             comments: Vec::new(),
             errors: Vec::new(),
-            verts: Vec::new()
+            verts: Vec::new(),
+            faces: Vec::new()
         }
     }
 }
 
-impl obj::Importer<f32> for TestImporter  {
+impl obj::Importer<f32, u32> for TestImporter  {
     fn comment(&mut self, line: &str) -> CallbackResult {
         self.comments.push(line.to_string());
         obj::Continue
@@ -33,6 +35,15 @@ impl obj::Importer<f32> for TestImporter  {
 
     fn v(&mut self, x: f32, y: f32, z: f32, w: Option<f32>) -> CallbackResult {
         self.verts.push((x, y, z, w));
+        obj::Continue
+    }
+
+    fn f(&mut self, mut iter: obj::ElementIterator) -> CallbackResult {
+        let mut face = Vec::new();
+        for v in iter {
+            face.push(v);
+        }
+        self.faces.push(face);
         obj::Continue
     }
 }
@@ -55,6 +66,11 @@ f 1 2 3
     assert!(importer.verts[0] == (0.0, 0.0, 0.0, None));
     assert!(importer.verts[1] == (1.0, 0.0, 0.0, None));
     assert!(importer.verts[2] == (0.0, 1.0, 0.0, None));
+    assert!(importer.faces.len() == 1);
+    // TODO(bishop): should be 0, 1, 2
+    assert!(importer.faces[0][0] == 1);
+    assert!(importer.faces[0][1] == 2);
+    assert!(importer.faces[0][2] == 3);
 }
 
 #[test]

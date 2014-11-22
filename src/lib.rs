@@ -27,7 +27,22 @@ impl<'a> Error<'a> {
     }
 }
 
-pub trait Importer<Real> {
+pub struct ElementIterator<'a> {
+    iter: &'a mut std::iter::Filter<'a, &'a str, 
+                                    std::str::CharSplits<'a, fn(char) -> bool>>
+}
+
+impl<'a, Index: FromStr> Iterator<Index> for ElementIterator<'a> {
+    fn next(&mut self) -> Option<Index> {
+        if let Some(word) = self.iter.next() {
+            from_str(word)
+        } else {
+            None
+        }
+    }
+}
+
+pub trait Importer<Real, Index> {
     fn comment(&mut self, _line: &str) -> CallbackResult {
         CallbackResult::Continue
     }
@@ -40,6 +55,10 @@ pub trait Importer<Real> {
          _w: Option<Real>) -> CallbackResult {
         CallbackResult::Continue
     }
+
+    fn f(&mut self, _iter: ElementIterator) -> CallbackResult {
+        CallbackResult::Continue
+    }
 }
 
 fn read_real<Real: FromStr>(word: Option<&str>) -> Option<Real> {
@@ -49,8 +68,8 @@ fn read_real<Real: FromStr>(word: Option<&str>) -> Option<Real> {
     }
 }
 
-fn read_obj_line<Real: FromStr>(line: String, importer: &mut Importer<Real>,
-                       line_num: uint) {
+fn read_obj_line<Real: FromStr, Index: FromStr>(
+    line: String, importer: &mut Importer<Real, Index>, line_num: uint) {
     if line.starts_with("#") {
         importer.comment(line[1..]);
     } else {
@@ -80,6 +99,9 @@ fn read_obj_line<Real: FromStr>(line: String, importer: &mut Importer<Real>,
                         }
                     }
                 }
+                "f" => {
+                    importer.f(ElementIterator { iter: &mut words });
+                }
                 _ => {
                     importer.error(Error::new(&line, line_num,
                                               "invalid name"));
@@ -89,8 +111,8 @@ fn read_obj_line<Real: FromStr>(line: String, importer: &mut Importer<Real>,
     }
 }
 
-pub fn read_obj<R: Reader, Real: FromStr>(reader: R,
-                                          importer: &mut Importer<Real>) {
+pub fn read_obj<R: Reader, Real: FromStr, Index: FromStr>(
+    reader: R, importer: &mut Importer<Real, Index>) {
     for (line_index, line) in BufferedReader::new(reader).lines().enumerate() {
         read_obj_line(line.unwrap(), importer, line_index + 1);
     }
