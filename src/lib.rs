@@ -36,7 +36,7 @@ impl<'a> Error<'a> {
 
 pub struct ElementIterator<'a> {
     iter: &'a mut std::iter::Filter<'a, &'a str, 
-                                    std::str::CharSplits<'a, fn(char) -> bool>>
+                                    std::str::CharSplits<'a, |char|:'a -> bool>>
 }
 
 impl<'a, Index: FromStr + 
