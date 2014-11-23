@@ -67,10 +67,9 @@ f 1 2 3
     assert!(importer.verts[1] == (1.0, 0.0, 0.0, None));
     assert!(importer.verts[2] == (0.0, 1.0, 0.0, None));
     assert!(importer.faces.len() == 1);
-    // TODO(bishop): should be 0, 1, 2
-    assert!(importer.faces[0][0] == 1);
-    assert!(importer.faces[0][1] == 2);
-    assert!(importer.faces[0][2] == 3);
+    assert!(importer.faces[0][0] == 0);
+    assert!(importer.faces[0][1] == 1);
+    assert!(importer.faces[0][2] == 2);
 }
 
 #[test]

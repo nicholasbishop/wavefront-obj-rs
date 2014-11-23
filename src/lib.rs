@@ -2,6 +2,8 @@
 #![feature(slicing_syntax)]
 
 use std::io::BufferedReader;
+use std::num::from_int;
+use std::ops::Sub;
 use std::str::FromStr;
 
 pub enum CallbackResult {
@@ -32,10 +34,22 @@ pub struct ElementIterator<'a> {
                                     std::str::CharSplits<'a, fn(char) -> bool>>
 }
 
-impl<'a, Index: FromStr> Iterator<Index> for ElementIterator<'a> {
+impl<'a, Index: FromStr + 
+                Sub<Index, Index> + 
+                FromPrimitive> Iterator<Index> for ElementIterator<'a> {
     fn next(&mut self) -> Option<Index> {
         if let Some(word) = self.iter.next() {
-            from_str(word)
+            let op_val : Option<Index> = from_str(word);
+            if let Some(val) = op_val {
+                let op_one : Option<Index> = from_int(1);
+                if let Some(one) = op_one {
+                    Some(val.sub(&one))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else {
             None
         }
