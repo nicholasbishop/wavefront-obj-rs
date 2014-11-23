@@ -11,20 +11,25 @@ pub enum CallbackResult {
     Stop
 }
 
+pub enum ErrorType {
+    InvalidName,
+    TooManyVertexComponents,
+    NotEnoughVertexComponents
+}
+
 pub struct Error<'a> {
     pub line: &'a String,
     pub line_number: uint,
-    // TODO(bishop): should probably be an enum
-    pub message: &'static str
+    pub error: ErrorType
 }
 
 impl<'a> Error<'a> {
-    fn new(line: &'a String, line_number: uint,
-           message: &'static str) -> Error<'a> {
+    fn new(line: &'a String, line_number: uint, 
+           error: ErrorType) -> Error<'a> {
         Error {
             line: line,
             line_number: line_number,
-            message: message
+            error: error
         }
     }
 }
@@ -102,14 +107,14 @@ fn read_obj_line<Real: FromStr, Index: FromStr>(
                             if junk.is_some() {
                                 importer.error(
                                     Error::new(&line, line_num,
-                                               "junk at end of line"));
+                                               ErrorType::TooManyVertexComponents));
                             } else {
                                 importer.v(x, y, z, ow);
                             }
                         }
                         _ => {
                             importer.error(Error::new(&line, line_num,
-                                                      "not enough components"));
+                                                      ErrorType::NotEnoughVertexComponents));
                         }
                     }
                 }
@@ -118,7 +123,7 @@ fn read_obj_line<Real: FromStr, Index: FromStr>(
                 }
                 _ => {
                     importer.error(Error::new(&line, line_num,
-                                              "invalid name"));
+                                              ErrorType::InvalidName));
                 }
             }
         }
