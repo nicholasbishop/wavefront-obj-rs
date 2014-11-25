@@ -34,9 +34,11 @@ impl<'a> Error<'a> {
     }
 }
 
+type Words<'a> = std::iter::Filter<'a, &'a str, 
+                                   std::str::CharSplits<'a, |char|:'a -> bool>>;
+
 pub struct ElementIterator<'a> {
-    iter: &'a mut std::iter::Filter<'a, &'a str, 
-                                    std::str::CharSplits<'a, |char|:'a -> bool>>
+    iter: Words<'a>
 }
 
 impl<'a, Index: FromStr + 
@@ -87,6 +89,32 @@ fn read_real<Real: FromStr>(word: Option<&str>) -> Option<Real> {
     }
 }
 
+fn read_obj_v<Real: FromStr, Index>(mut words: Words,
+                                    importer: &mut Importer<Real, Index>,
+                                    line: &String,
+                                    line_num: uint) {
+    let ox = read_real::<Real>(words.next());
+    let oy = read_real::<Real>(words.next());
+    let oz = read_real::<Real>(words.next());
+    match (ox, oy, oz) {
+        (Some(x), Some(y), Some(z)) => {
+            let ow = read_real::<Real>(words.next());
+            let junk = words.next();
+            if junk.is_some() {
+                importer.error(
+                    Error::new(line, line_num,
+                               ErrorType::TooManyVertexComponents));
+            } else {
+                importer.v(x, y, z, ow);
+            }
+        }
+        _ => {
+            importer.error(Error::new(line, line_num,
+                                      ErrorType::NotEnoughVertexComponents));
+        }
+    }
+}
+
 fn read_obj_line<Real: FromStr, Index: FromStr>(
     line: String, importer: &mut Importer<Real, Index>, line_num: uint) {
     if line.starts_with("#") {
@@ -97,29 +125,10 @@ fn read_obj_line<Real: FromStr, Index: FromStr>(
         if let Some(w) = words.next() {
             match w {
                 "v" => {
-                    let ox = read_real::<Real>(words.next());
-                    let oy = read_real::<Real>(words.next());
-                    let oz = read_real::<Real>(words.next());
-                    match (ox, oy, oz) {
-                        (Some(x), Some(y), Some(z)) => {
-                            let ow = read_real::<Real>(words.next());
-                            let junk = words.next();
-                            if junk.is_some() {
-                                importer.error(
-                                    Error::new(&line, line_num,
-                                               ErrorType::TooManyVertexComponents));
-                            } else {
-                                importer.v(x, y, z, ow);
-                            }
-                        }
-                        _ => {
-                            importer.error(Error::new(&line, line_num,
-                                                      ErrorType::NotEnoughVertexComponents));
-                        }
-                    }
+                    read_obj_v(words, importer, &line, line_num);
                 }
                 "f" => {
-                    importer.f(ElementIterator { iter: &mut words });
+                    importer.f(ElementIterator { iter: words });
                 }
                 _ => {
                     importer.error(Error::new(&line, line_num,
