@@ -29,7 +29,7 @@ impl obj::Importer<f32, u32> for TestImporter  {
     }
 
     fn error(&mut self, error: obj::Error) -> CallbackResult {
-        self.errors.push(error.line_number);
+        self.errors.push(error.line.number);
         obj::Continue
     }
 

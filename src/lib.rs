@@ -17,18 +17,20 @@ pub enum ErrorType {
     NotEnoughVertexComponents
 }
 
+pub struct Line<'a> {
+    pub text: &'a String,
+    pub number: uint
+}
+
 pub struct Error<'a> {
-    pub line: &'a String,
-    pub line_number: uint,
+    pub line: Line<'a>,
     pub error: ErrorType
 }
 
 impl<'a> Error<'a> {
-    fn new(line: &'a String, line_number: uint, 
-           error: ErrorType) -> Error<'a> {
+    fn new(line: Line<'a>, error: ErrorType) -> Error<'a> {
         Error {
             line: line,
-            line_number: line_number,
             error: error
         }
     }
@@ -91,8 +93,7 @@ fn read_real<Real: FromStr>(word: Option<&str>) -> Option<Real> {
 
 fn read_obj_v<Real: FromStr, Index>(mut words: Words,
                                     importer: &mut Importer<Real, Index>,
-                                    line: &String,
-                                    line_num: uint) {
+                                    line: Line) {
     let ox = read_real::<Real>(words.next());
     let oy = read_real::<Real>(words.next());
     let oz = read_real::<Real>(words.next());
@@ -102,37 +103,35 @@ fn read_obj_v<Real: FromStr, Index>(mut words: Words,
             let junk = words.next();
             if junk.is_some() {
                 importer.error(
-                    Error::new(line, line_num,
-                               ErrorType::TooManyVertexComponents));
+                    Error::new(line, ErrorType::TooManyVertexComponents));
             } else {
                 importer.v(x, y, z, ow);
             }
         }
         _ => {
-            importer.error(Error::new(line, line_num,
+            importer.error(Error::new(line,
                                       ErrorType::NotEnoughVertexComponents));
         }
     }
 }
 
 fn read_obj_line<Real: FromStr, Index: FromStr>(
-    line: String, importer: &mut Importer<Real, Index>, line_num: uint) {
-    if line.starts_with("#") {
-        importer.comment(line[1..]);
+    importer: &mut Importer<Real, Index>, line: Line) {
+    if line.text.starts_with("#") {
+        importer.comment(line.text[1..]);
     } else {
-        let mut words = line.words();
+        let mut words = line.text.words();
 
         if let Some(w) = words.next() {
             match w {
                 "v" => {
-                    read_obj_v(words, importer, &line, line_num);
+                    read_obj_v(words, importer, line);
                 }
                 "f" => {
                     importer.f(ElementIterator { iter: words });
                 }
                 _ => {
-                    importer.error(Error::new(&line, line_num,
-                                              ErrorType::InvalidName));
+                    importer.error(Error::new(line, ErrorType::InvalidName));
                 }
             }
         }
@@ -142,6 +141,7 @@ fn read_obj_line<Real: FromStr, Index: FromStr>(
 pub fn read_obj<R: Reader, Real: FromStr, Index: FromStr>(
     reader: R, importer: &mut Importer<Real, Index>) {
     for (line_index, line) in BufferedReader::new(reader).lines().enumerate() {
-        read_obj_line(line.unwrap(), importer, line_index + 1);
+        read_obj_line(importer,
+                      Line { text: &line.unwrap(), number: line_index + 1 });
     }
 }
