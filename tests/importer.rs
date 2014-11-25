@@ -4,6 +4,8 @@ use std::io::BufReader;
 use obj::CallbackResult;
 
 struct TestImporter {
+    panic_on_error: bool,
+
     comments: Vec<String>,
     errors: Vec<uint>,
 
@@ -12,8 +14,9 @@ struct TestImporter {
 }
 
 impl TestImporter {
-    fn new() -> TestImporter {
+    fn new(panic_on_error: bool) -> TestImporter {
         TestImporter {
+            panic_on_error: panic_on_error,
             comments: Vec::new(),
             errors: Vec::new(),
             verts: Vec::new(),
@@ -29,8 +32,12 @@ impl obj::Importer<f32, u32> for TestImporter  {
     }
 
     fn error(&mut self, error: obj::Error) -> CallbackResult {
-        self.errors.push(error.line.number);
-        obj::Continue
+        if self.panic_on_error {
+            panic!()
+        } else {
+            self.errors.push(error.line.number);
+            obj::Continue
+        }
     }
 
     fn v(&mut self, x: f32, y: f32, z: f32, w: Option<f32>) -> CallbackResult {
@@ -60,7 +67,7 @@ v 1 0 0
 v 0 1 0
 f 1 2 3
 ";
-    let mut importer = TestImporter::new();
+    let mut importer = TestImporter::new(true);
     obj::read_obj(str_reader(input), &mut importer);
     assert!(importer.verts == 
             vec!((0.0, 0.0, 0.0, None),
@@ -74,14 +81,14 @@ fn errors() {
     let input = r"invalid
 invalid
 ";
-    let mut importer = TestImporter::new();
+    let mut importer = TestImporter::new(false);
     obj::read_obj(str_reader(input), &mut importer);
     assert!(importer.errors == vec!(1, 2));
 }
 
 #[test]
 fn comment() {
-    let mut importer = TestImporter::new();
+    let mut importer = TestImporter::new(true);
     obj::read_obj(str_reader("#comment"), &mut importer);
     assert!(importer.comments.len() == 1);
     assert!(importer.comments[0].as_slice() == "comment");
@@ -89,7 +96,7 @@ fn comment() {
 
 #[test]
 fn test_invalid_vert() {
-    let mut importer = TestImporter::new();
+    let mut importer = TestImporter::new(false);
     obj::read_obj(str_reader("v 0 0"), &mut importer);
     assert!(importer.errors.len() == 1);
     assert!(importer.verts.is_empty());
