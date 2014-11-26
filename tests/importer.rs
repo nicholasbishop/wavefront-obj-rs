@@ -10,6 +10,8 @@ struct TestImporter {
     errors: Vec<uint>,
 
     verts: Vec<(f32, f32, f32, Option<f32>)>,
+    uvs: Vec<(f32, f32, Option<f32>)>,
+
     faces: Vec<Vec<u32>>
 }
 
@@ -20,6 +22,7 @@ impl TestImporter {
             comments: Vec::new(),
             errors: Vec::new(),
             verts: Vec::new(),
+            uvs: Vec::new(),
             faces: Vec::new()
         }
     }
@@ -42,6 +45,11 @@ impl obj::Importer<f32, u32> for TestImporter  {
 
     fn v(&mut self, x: f32, y: f32, z: f32, w: Option<f32>) -> CallbackResult {
         self.verts.push((x, y, z, w));
+        obj::Continue
+    }
+
+    fn vt(&mut self, u: f32, v: f32, w: Option<f32>) -> CallbackResult {
+        self.uvs.push((u, v, w));
         obj::Continue
     }
 
@@ -100,4 +108,11 @@ fn test_invalid_vert() {
     obj::read_obj(str_reader("v 0 0"), &mut importer);
     assert!(importer.errors.len() == 1);
     assert!(importer.verts.is_empty());
+}
+
+#[test]
+fn test_vt() {
+    let mut importer = TestImporter::new(true);
+    obj::read_obj(str_reader("vt 1 2"), &mut importer);
+    assert!(importer.uvs == vec!((1.0, 2.0, None)));
 }

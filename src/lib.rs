@@ -79,6 +79,10 @@ pub trait Importer<Real, Index> {
         CallbackResult::Continue
     }
 
+    fn vt(&mut self, _u: Real, _v: Real, _w: Option<Real>) -> CallbackResult {
+        CallbackResult::Continue
+    }
+
     fn f(&mut self, _iter: ElementIterator) -> CallbackResult {
         CallbackResult::Continue
     }
@@ -115,6 +119,29 @@ fn read_obj_v<Real: FromStr, Index>(mut words: Words,
     }
 }
 
+fn read_obj_vt<Real: FromStr, Index>(mut words: Words,
+                                    importer: &mut Importer<Real, Index>,
+                                    line: Line) {
+    let ox = read_real::<Real>(words.next());
+    let oy = read_real::<Real>(words.next());
+    match (ox, oy) {
+        (Some(x), Some(y)) => {
+            let ow = read_real::<Real>(words.next());
+            let junk = words.next();
+            if junk.is_some() {
+                importer.error(
+                    Error::new(line, ErrorType::TooManyVertexComponents));
+            } else {
+                importer.vt(x, y, ow);
+            }
+        }
+        _ => {
+            importer.error(Error::new(line,
+                                      ErrorType::NotEnoughVertexComponents));
+        }
+    }
+}
+
 fn read_obj_line<Real: FromStr, Index: FromStr>(
     importer: &mut Importer<Real, Index>, line: Line) {
     if line.text.starts_with("#") {
@@ -126,6 +153,9 @@ fn read_obj_line<Real: FromStr, Index: FromStr>(
             match w {
                 "v" => {
                     read_obj_v(words, importer, line);
+                }
+                "vt" => {
+                    read_obj_vt(words, importer, line);
                 }
                 "f" => {
                     importer.f(ElementIterator { iter: words });
