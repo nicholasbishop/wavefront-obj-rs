@@ -19,7 +19,7 @@ enum State {
     EndOfFile
 }
 
-pub struct TokenIterator<'a, R: 'a> {
+pub struct TokenIterator<R> {
     buffered_reader: BufferedReader<R>,
     state: State,
     buffer: String,
@@ -30,7 +30,7 @@ fn comment_char(c: char) -> bool {
     c == '#'
 }
 
-impl<'a, R: Reader> TokenIterator<'a, R> {
+impl<R> TokenIterator<R> {
     /// Read a character, updating the iterator state accordingly
     fn push_char(&mut self, c: char) {
         assert!(self.token.is_none());
@@ -91,9 +91,8 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
     }
 }
 
-impl<'a, R: Reader> TokenIterator<'a, R> {
-//impl<'a, 'b, R: Reader> Iterator<IoResult<(Token, &'b str)>> for TokenIterator<'a, R> {
-    fn next(&'a mut self) -> Option<IoResult<(Token, &'a str)>> {
+impl<R: Reader> TokenIterator<R> {
+    fn silly_next(&mut self) -> Option<IoResult<(Token, &str)>> {
         let mut result = None;
 
         if let Some(token) = self.token {
@@ -121,9 +120,20 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
 
         result
     }
+
+    fn next(&mut self) -> Option<IoResult<(Token, &str)>> {
+        self.silly_next()
+    }
 }
 
-pub fn read_obj<'a, R: Reader>(reader: R) -> TokenIterator<'a, R> {
+// impl<R: Reader> Iterator<IoResult<(Token, &str)>> for TokenIterator<R> {
+//     fn next(&mut self) -> Option<IoResult<(Token, &str)>> {
+//         self.silly_next()
+//     }
+// }
+
+
+pub fn read_obj<R: Reader>(reader: R) -> TokenIterator<R> {
     let mut iter = TokenIterator {
         buffered_reader: BufferedReader::new(reader),
         state: State::StartOfLine,
