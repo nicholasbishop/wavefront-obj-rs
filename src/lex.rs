@@ -143,9 +143,10 @@ fn test_tag() {
 }
 
 #[test]
-fn test_tag_and_argument() {
-    let mut iter = read_obj(str_reader("a b\n"));
+fn test_tag_and_arguments() {
+    let mut iter = read_obj(str_reader("a b c\n"));
     assert!(iter.next().unwrap().unwrap() == Token::Tag);
+    assert!(iter.next().unwrap().unwrap() == Token::Argument);
     assert!(iter.next().unwrap().unwrap() == Token::Argument);
     assert!(iter.next() == None);
 }
