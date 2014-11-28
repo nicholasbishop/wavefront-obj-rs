@@ -6,6 +6,8 @@ use std::num::from_int;
 use std::ops::Sub;
 use std::str::FromStr;
 
+mod lex;
+
 pub enum CallbackResult {
     Continue,
     Stop
