@@ -101,9 +101,7 @@ impl<'a, R: Reader> Iterator<IoResult<Token>> for TokenIterator<'a, R> {
         let mut result = None;
 
         while result.is_none() {
-            // TODO
-            let ioc = self.buffered_reader.read_char();
-            match ioc {
+            match self.buffered_reader.read_char() {
                 Ok(c) => {
                     if let Some(token) = self.handle_char(c) {
                         result = Some(Result::Ok(token));
