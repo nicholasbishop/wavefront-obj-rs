@@ -91,12 +91,14 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
     }
 }
 
-impl<'a, R: Reader> Iterator<IoResult<Token>> for TokenIterator<'a, R> {
-    fn next(&mut self) -> Option<IoResult<Token>> {
+impl<'a, 'b, R: Reader> TokenIterator<'a, R> {
+//impl<'a, 'b, R: Reader> Iterator<IoResult<(Token, &'b str)>> for TokenIterator<'a, R> {
+    fn next(&'b mut self) -> Option<IoResult<(Token, &'b str)>> {
         let mut result = None;
 
         if let Some(token) = self.token {
             self.token = None;
+            self.buffer.clear();
         }
 
         while result.is_none() {
@@ -105,7 +107,7 @@ impl<'a, R: Reader> Iterator<IoResult<Token>> for TokenIterator<'a, R> {
                     self.push_char(c);
 
                     if let Some(token) = self.token {
-                        result = Some(Result::Ok(token));
+                        return Some(Result::Ok((token, self.buffer.as_slice())));
                     }
                 }
                 Err(ref e) => {
@@ -138,22 +140,22 @@ fn str_reader(s: &'static str) -> std::io::BufReader {
 #[test]
 fn test_tag() {
     let mut iter = read_obj(str_reader("a\n"));
-    assert!(iter.next().unwrap().unwrap() == Token::Tag);
+    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
     assert!(iter.next() == None);
 }
 
 #[test]
 fn test_tag_and_arguments() {
     let mut iter = read_obj(str_reader("a b c\n"));
-    assert!(iter.next().unwrap().unwrap() == Token::Tag);
-    assert!(iter.next().unwrap().unwrap() == Token::Argument);
-    assert!(iter.next().unwrap().unwrap() == Token::Argument);
+    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
+    assert!(iter.next().unwrap().unwrap() == (Token::Argument, "b"));
+    assert!(iter.next().unwrap().unwrap() == (Token::Argument, "c"));
     assert!(iter.next() == None);
 }
 
 #[test]
 fn test_tag_no_newline() {
     let mut iter = read_obj(str_reader("a"));
-    assert!(iter.next().unwrap().unwrap() == Token::Tag);
+    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
     assert!(iter.next() == None);
 }
