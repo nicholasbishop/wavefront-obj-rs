@@ -91,9 +91,9 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
     }
 }
 
-impl<'a, 'b, R: Reader> TokenIterator<'a, R> {
+impl<'a, R: Reader> TokenIterator<'a, R> {
 //impl<'a, 'b, R: Reader> Iterator<IoResult<(Token, &'b str)>> for TokenIterator<'a, R> {
-    fn next(&'b mut self) -> Option<IoResult<(Token, &'b str)>> {
+    fn next(&'a mut self) -> Option<IoResult<(Token, &'a str)>> {
         let mut result = None;
 
         if let Some(token) = self.token {
