@@ -22,7 +22,8 @@ enum State {
 pub struct TokenIterator<'a, R: 'a> {
     buffered_reader: BufferedReader<R>,
     state: State,
-    buffer: String
+    buffer: String,
+    token: Option<Token>
 }
 
 fn comment_char(c: char) -> bool {
@@ -30,8 +31,9 @@ fn comment_char(c: char) -> bool {
 }
 
 impl<'a, R: Reader> TokenIterator<'a, R> {
-    fn handle_char(&mut self, c: char) -> Option<Token> {
-        let mut result = None;
+    /// Read a character, updating the iterator state accordingly
+    fn push_char(&mut self, c: char) {
+        assert!(self.token.is_none());
 
         match self.state {
             State::StartOfLine => {
@@ -48,12 +50,10 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
                 } else if c.is_whitespace() {
                     if c == '\n' {
                         self.state = State::StartOfLine;
-                        self.buffer.clear();
-                        result = Some(Token::Tag);
+                        self.token = Some(Token::Tag);
                     } else {
                         self.state = State::Argument;
-                        self.buffer.clear();
-                        result = Some(Token::Argument);
+                        self.token = Some(Token::Tag);
                     }
                 } else {
                     self.buffer.push(c);
@@ -67,12 +67,10 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
                 } else if c.is_whitespace() {
                     if c == '\n' {
                         self.state = State::StartOfLine;
-                        self.buffer.clear();
-                        result = Some(Token::Argument);
+                        self.token = Some(Token::Argument);
                     } else {
                         self.state = State::Argument;
-                        self.buffer.clear();
-                        result = Some(Token::Argument);
+                        self.token = Some(Token::Argument);
                     }
                 } else {
                     self.buffer.push(c);
@@ -81,8 +79,7 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
             State::Comment => {
                 if c == '\n' {
                     self.state = State::StartOfLine;
-                    self.buffer.clear();
-                    result = Some(Token::Comment);
+                    self.token = Some(Token::Comment);
                 } else {
                     self.buffer.push(c);
                 }
@@ -91,8 +88,6 @@ impl<'a, R: Reader> TokenIterator<'a, R> {
                 
             }
         }
-
-        result
     }
 }
 
@@ -100,10 +95,16 @@ impl<'a, R: Reader> Iterator<IoResult<Token>> for TokenIterator<'a, R> {
     fn next(&mut self) -> Option<IoResult<Token>> {
         let mut result = None;
 
+        if let Some(token) = self.token {
+            self.token = None;
+        }
+
         while result.is_none() {
             match self.buffered_reader.read_char() {
                 Ok(c) => {
-                    if let Some(token) = self.handle_char(c) {
+                    self.push_char(c);
+
+                    if let Some(token) = self.token {
                         result = Some(Result::Ok(token));
                     }
                 }
@@ -124,7 +125,8 @@ pub fn read_obj<'a, R: Reader>(reader: R) -> TokenIterator<'a, R> {
     let mut iter = TokenIterator {
         buffered_reader: BufferedReader::new(reader),
         state: State::StartOfLine,
-        buffer: String::new()
+        buffer: String::new(),
+        token: None
     };
     iter
 }
