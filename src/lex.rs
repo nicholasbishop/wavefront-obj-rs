@@ -23,11 +23,6 @@ pub struct TokenIterator<'a, R: 'a> {
     buffered_reader: BufferedReader<R>,
     state: State,
     buffer: String
-    //line_iter: std::iter::Enumerate<std::io::Lines<'a, std::io::buffered::BufferedReader<R>>>,
-
-    // line_iter: Option<std::io::Lines<'a, BufferedReader<R>>>,
-    // line: Option<String>,
-    // word_iter: Option<WordIterator<'a>>
 }
 
 fn comment_char(c: char) -> bool {
@@ -35,12 +30,6 @@ fn comment_char(c: char) -> bool {
 }
 
 impl<'a, R: Reader> TokenIterator<'a, R> {
-//     fn init_iters(&'a mut self) {
-//         self.line_iter = Some(self.buffered_reader.lines());
-//         self.line = self.line_iter.unwrap().next();
-//         self.word_iter = self.line.unwrap().words();
-//     }
-
     fn handle_char(&mut self, c: char) -> Option<Token> {
         let mut result = None;
 
@@ -121,9 +110,6 @@ impl<'a, R: Reader> Iterator<IoResult<Token>> for TokenIterator<'a, R> {
                     }
                 }
                 Err(ref e) => {
-                    // println!("{}", e);
-                    // panic!("blah");
-                    // TODO
                     if e.kind == std::io::IoErrorKind::EndOfFile {
                         return None;
                     }
@@ -135,20 +121,6 @@ impl<'a, R: Reader> Iterator<IoResult<Token>> for TokenIterator<'a, R> {
         result
     }
 }
-
-// impl<'a, LineIter> TokenIterator<'a, LineIter> {
-//     fn new(line_iter: LineIter) -> TokenIterator<'a, LineIter> {
-//         TokenIterator { line_iter: line_iter }
-//     }
-// }
-
-// impl<'a, R: Reader> Iterator<Token> for TokenIterator<'a, R> {
-//     fn next(&mut self) -> Option<Token> {
-//         // if let Some(result) = self.reader.next() {
-            
-//         // }
-//     }
-// }
 
 pub fn read_obj<'a, R: Reader>(reader: R) -> TokenIterator<'a, R> {
     let mut iter = TokenIterator {
