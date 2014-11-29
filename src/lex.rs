@@ -227,6 +227,15 @@ fn test_tag_and_arguments() {
 }
 
 #[test]
+fn test_arguments_with_extra_space() {
+    let mut iter = read_obj(str_reader("v b   c\n"));
+    assert!(iter.next().unwrap() == Token::Tag(Tag::V));
+    assert!(iter.next().unwrap() == Token::Argument("b"));
+    assert!(iter.next().unwrap() == Token::Argument("c"));
+    assert!(iter_eof(&mut iter));
+}
+
+#[test]
 fn test_tag_no_newline() {
     let mut iter = read_obj(str_reader("v"));
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
@@ -239,7 +248,6 @@ fn test_line_comment() {
     assert!(iter.next().unwrap() == Token::Comment(" comment"));
     assert!(iter_eof(&mut iter));
 }
-
 
 #[test]
 fn test_comment_after_tag() {
