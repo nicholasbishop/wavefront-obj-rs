@@ -106,8 +106,6 @@ impl<R: Reader> TokenIterator<R> {
                 }
             }
             State::Argument => {
-                // TODO: swallow extra whitespace somewhere here
-
                 if comment_char(c) {
                     self.state = State::Comment;
                 } else if c.is_whitespace() {
@@ -116,7 +114,9 @@ impl<R: Reader> TokenIterator<R> {
                         self.token_type = Some(TokenType::Argument);
                     } else {
                         self.state = State::Argument;
-                        self.token_type = Some(TokenType::Argument);
+                        if !self.buffer.is_empty() {
+                            self.token_type = Some(TokenType::Argument);
+                        }
                     }
                 } else {
                     self.buffer.push(c);
@@ -227,7 +227,7 @@ fn test_tag_and_arguments() {
 
 #[test]
 fn test_arguments_with_extra_space() {
-    let mut iter = read_obj(str_reader("v b   c\n"));
+    let mut iter = read_obj(str_reader("v   b   c\n"));
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter.next().unwrap() == Token::Argument("b"));
     assert!(iter.next().unwrap() == Token::Argument("c"));
