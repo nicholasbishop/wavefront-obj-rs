@@ -180,14 +180,13 @@ impl<R: Reader> TokenIterator<R> {
 }
 
 pub fn read_obj<R: Reader>(reader: R) -> TokenIterator<R> {
-    let mut iter = TokenIterator {
+    TokenIterator {
         buffered_reader: BufferedReader::new(reader),
         state: State::StartOfLine,
         buffer: String::new(),
         token_type: None,
         err: None
-    };
-    iter
+    }
 }
 
 fn str_reader(s: &'static str) -> std::io::BufReader {
