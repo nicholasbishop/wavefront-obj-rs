@@ -5,8 +5,29 @@ use std::io::IoErrorKind;
 use std::io::IoResult;
 
 #[deriving(PartialEq, Show)]
+pub enum Tag<'a> {
+    F,
+    V,
+
+    Unknown(&'a str)
+}
+
+impl<'a> Tag<'a> {
+    // TODO(bishop): probably a better way to do this
+    fn from_str(s: &'a str) -> Tag<'a> {
+        if s == "f" {
+            Tag::F
+        } else if s == "v" {
+            Tag::V
+        } else {
+            Tag::Unknown(s)
+        }
+    }
+}
+
+#[deriving(PartialEq, Show)]
 pub enum Token<'a> {
-    Tag(&'a str),
+    Tag(Tag<'a>),
     Argument(&'a str),
     Comment(&'a str)
 }
@@ -30,7 +51,7 @@ enum TokenType {
 impl<'a> Token<'a> {
     fn new(token_type: TokenType, s: &'a str) -> Token<'a> {
         match token_type {
-            TokenType::Tag => Token::Tag(s),
+            TokenType::Tag => Token::Tag(Tag::from_str(s)),
             TokenType::Argument => Token::Argument(s),
             TokenType::Comment => Token::Comment(s)
         }
@@ -178,15 +199,22 @@ fn iter_eof<R: Reader>(iter: &mut TokenIterator<R>) -> bool {
 
 #[test]
 fn test_tag() {
-    let mut iter = read_obj(str_reader("a\n"));
-    assert!(iter.next().unwrap() == Token::Tag("a"));
+    let mut iter = read_obj(str_reader("v\n"));
+    assert!(iter.next().unwrap() == Token::Tag(Tag::V));
+    assert!(iter_eof(&mut iter));
+}
+
+#[test]
+fn test_unknown_tag() {
+    let mut iter = read_obj(str_reader("foo\n"));
+    assert!(iter.next().unwrap() == Token::Tag(Tag::Unknown("foo")));
     assert!(iter_eof(&mut iter));
 }
 
 #[test]
 fn test_tag_and_arguments() {
-    let mut iter = read_obj(str_reader("a b c\n"));
-    assert!(iter.next().unwrap() == Token::Tag("a"));
+    let mut iter = read_obj(str_reader("v b c\n"));
+    assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter.next().unwrap() == Token::Argument("b"));
     assert!(iter.next().unwrap() == Token::Argument("c"));
     assert!(iter_eof(&mut iter));
@@ -194,8 +222,8 @@ fn test_tag_and_arguments() {
 
 #[test]
 fn test_tag_no_newline() {
-    let mut iter = read_obj(str_reader("a"));
-    assert!(iter.next().unwrap() == Token::Tag("a"));
+    let mut iter = read_obj(str_reader("v"));
+    assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter_eof(&mut iter));
 }
 
@@ -210,7 +238,7 @@ fn test_line_comment() {
 #[test]
 fn test_comment_after_tag() {
     let mut iter = read_obj(str_reader("v # comment\n"));
-    assert!(iter.next().unwrap() == Token::Tag("v"));
+    assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter.next().unwrap() == Token::Comment(" comment"));
     assert!(iter_eof(&mut iter));
 }
