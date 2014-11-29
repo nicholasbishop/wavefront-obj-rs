@@ -7,6 +7,7 @@ use std::ops::Sub;
 use std::str::FromStr;
 
 mod lex;
+mod tag;
 
 pub enum CallbackResult {
     Continue,

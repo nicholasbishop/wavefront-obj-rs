@@ -4,32 +4,7 @@ use std::io::BufferedReader;
 use std::io::IoErrorKind;
 use std::io::IoResult;
 
-#[deriving(PartialEq, Show)]
-pub enum Tag<'a> {
-    F,
-    V,
-    Vn,
-    Vt,
-
-    Unknown(&'a str)
-}
-
-impl<'a> Tag<'a> {
-    fn from_str(s: &'a str) -> Tag<'a> {
-        // TODO(bishop): probably a less repetitive way to write this
-        if s == "f" {
-            Tag::F
-        } else if s == "v" {
-            Tag::V
-        } else if s == "vn" {
-            Tag::Vn
-        } else if s == "vt" {
-            Tag::Vt
-        } else {
-            Tag::Unknown(s)
-        }
-    }
-}
+use tag::Tag;
 
 #[deriving(PartialEq, Show)]
 pub enum Token<'a> {
