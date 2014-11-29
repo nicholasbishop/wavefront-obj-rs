@@ -109,7 +109,14 @@ impl<R: Reader> TokenIterator<R> {
                 }
                 Err(ref e) => {
                     if e.kind == std::io::IoErrorKind::EndOfFile {
-                        return None;
+                        self.push_char('\n');
+
+                        // TODO(bishop): deduplicate
+                        if let Some(token) = self.token {
+                            return Some(Result::Ok((token, self.buffer.as_slice())));
+                        } else {
+                            return None;
+                        }
                     }
                     result = Some(Result::Err(e.clone()));
                 }
