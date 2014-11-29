@@ -30,7 +30,7 @@ fn comment_char(c: char) -> bool {
     c == '#'
 }
 
-impl<R> TokenIterator<R> {
+impl<R: Reader> TokenIterator<R> {
     /// Read a character, updating the iterator state accordingly
     fn push_char(&mut self, c: char) {
         assert!(self.token.is_none());
@@ -89,10 +89,8 @@ impl<R> TokenIterator<R> {
             }
         }
     }
-}
 
-impl<R: Reader> TokenIterator<R> {
-    fn silly_next(&mut self) -> Option<IoResult<(Token, &str)>> {
+    fn next(&mut self) -> Option<IoResult<(Token, &str)>> {
         let mut result = None;
 
         if let Some(token) = self.token {
@@ -120,18 +118,7 @@ impl<R: Reader> TokenIterator<R> {
 
         result
     }
-
-    fn next(&mut self) -> Option<IoResult<(Token, &str)>> {
-        self.silly_next()
-    }
 }
-
-// impl<R: Reader> Iterator<IoResult<(Token, &str)>> for TokenIterator<R> {
-//     fn next(&mut self) -> Option<IoResult<(Token, &str)>> {
-//         self.silly_next()
-//     }
-// }
-
 
 pub fn read_obj<R: Reader>(reader: R) -> TokenIterator<R> {
     let mut iter = TokenIterator {
