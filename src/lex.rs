@@ -15,8 +15,8 @@ pub enum Tag<'a> {
 }
 
 impl<'a> Tag<'a> {
-    // TODO(bishop): probably a better way to do this
     fn from_str(s: &'a str) -> Tag<'a> {
+        // TODO(bishop): probably a less repetitive way to write this
         if s == "f" {
             Tag::F
         } else if s == "v" {
