@@ -4,10 +4,10 @@ use std::io::BufferedReader;
 use std::io::IoResult;
 
 #[deriving(PartialEq, Show)]
-pub enum Token {
-    Tag,
-    Argument,
-    Comment
+pub enum Token<'a> {
+    Tag(&'a str),
+    Argument(&'a str),
+    Comment(&'a str)
 }
 
 #[deriving(PartialEq)]
@@ -19,11 +19,28 @@ enum State {
     EndOfFile
 }
 
+#[deriving(PartialEq)]
+enum TokenType {
+    Tag,
+    Argument,
+    Comment
+}
+
+impl<'a> Token<'a> {
+    fn new(token_type: TokenType, s: &'a str) -> Token<'a> {
+        match token_type {
+            TokenType::Tag => Token::Tag(s),
+            TokenType::Argument => Token::Argument(s),
+            TokenType::Comment => Token::Comment(s)
+        }
+    }
+}
+
 pub struct TokenIterator<R> {
     buffered_reader: BufferedReader<R>,
     state: State,
     buffer: String,
-    token: Option<Token>
+    token_type: Option<TokenType>
 }
 
 fn comment_char(c: char) -> bool {
@@ -33,7 +50,7 @@ fn comment_char(c: char) -> bool {
 impl<R: Reader> TokenIterator<R> {
     /// Read a character, updating the iterator state accordingly
     fn push_char(&mut self, c: char) {
-        assert!(self.token.is_none());
+        assert!(self.token_type.is_none());
 
         match self.state {
             State::StartOfLine => {
@@ -50,10 +67,10 @@ impl<R: Reader> TokenIterator<R> {
                 } else if c.is_whitespace() {
                     if c == '\n' {
                         self.state = State::StartOfLine;
-                        self.token = Some(Token::Tag);
+                        self.token_type = Some(TokenType::Tag);
                     } else {
                         self.state = State::Argument;
-                        self.token = Some(Token::Tag);
+                        self.token_type = Some(TokenType::Tag);
                     }
                 } else {
                     self.buffer.push(c);
@@ -67,10 +84,10 @@ impl<R: Reader> TokenIterator<R> {
                 } else if c.is_whitespace() {
                     if c == '\n' {
                         self.state = State::StartOfLine;
-                        self.token = Some(Token::Argument);
+                        self.token_type = Some(TokenType::Argument);
                     } else {
                         self.state = State::Argument;
-                        self.token = Some(Token::Argument);
+                        self.token_type = Some(TokenType::Argument);
                     }
                 } else {
                     self.buffer.push(c);
@@ -79,7 +96,7 @@ impl<R: Reader> TokenIterator<R> {
             State::Comment => {
                 if c == '\n' {
                     self.state = State::StartOfLine;
-                    self.token = Some(Token::Comment);
+                    self.token_type = Some(TokenType::Comment);
                 } else {
                     self.buffer.push(c);
                 }
@@ -90,11 +107,11 @@ impl<R: Reader> TokenIterator<R> {
         }
     }
 
-    fn next(&mut self) -> Option<IoResult<(Token, &str)>> {
+    fn next(&mut self) -> Option<IoResult<Token>> {
         let mut result = None;
 
-        if let Some(token) = self.token {
-            self.token = None;
+        if self.token_type.is_some() {
+            self.token_type = None;
             self.buffer.clear();
         }
 
@@ -103,8 +120,9 @@ impl<R: Reader> TokenIterator<R> {
                 Ok(c) => {
                     self.push_char(c);
 
-                    if let Some(token) = self.token {
-                        return Some(Result::Ok((token, self.buffer.as_slice())));
+                    if let Some(token_type) = self.token_type {
+                        return Some(Result::Ok(Token::new(token_type,
+                                                          self.buffer.as_slice())));
                     }
                 }
                 Err(ref e) => {
@@ -112,11 +130,13 @@ impl<R: Reader> TokenIterator<R> {
                         self.push_char('\n');
 
                         // TODO(bishop): deduplicate
-                        if let Some(token) = self.token {
-                            return Some(Result::Ok((token, self.buffer.as_slice())));
+                        if let Some(token_type) = self.token_type {
+                            return Some(Result::Ok(Token::new(token_type,
+                                                              self.buffer.as_slice())));
                         } else {
                             return None;
                         }
+
                     }
                     result = Some(Result::Err(e.clone()));
                 }
@@ -132,7 +152,7 @@ pub fn read_obj<R: Reader>(reader: R) -> TokenIterator<R> {
         buffered_reader: BufferedReader::new(reader),
         state: State::StartOfLine,
         buffer: String::new(),
-        token: None
+        token_type: None
     };
     iter
 }
@@ -144,30 +164,30 @@ fn str_reader(s: &'static str) -> std::io::BufReader {
 #[test]
 fn test_tag() {
     let mut iter = read_obj(str_reader("a\n"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
+    assert!(iter.next().unwrap().unwrap() == Token::Tag("a"));
     assert!(iter.next() == None);
 }
 
 #[test]
 fn test_tag_and_arguments() {
     let mut iter = read_obj(str_reader("a b c\n"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Argument, "b"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Argument, "c"));
+    assert!(iter.next().unwrap().unwrap() == Token::Tag("a"));
+    assert!(iter.next().unwrap().unwrap() == Token::Argument("b"));
+    assert!(iter.next().unwrap().unwrap() == Token::Argument("c"));
     assert!(iter.next() == None);
 }
 
 #[test]
 fn test_tag_no_newline() {
     let mut iter = read_obj(str_reader("a"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
+    assert!(iter.next().unwrap().unwrap() == Token::Tag("a"));
     assert!(iter.next() == None);
 }
 
 #[test]
 fn test_line_comment() {
     let mut iter = read_obj(str_reader("# comment\n"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Comment, " comment"));
+    assert!(iter.next().unwrap().unwrap() == Token::Comment(" comment"));
     assert!(iter.next() == None);
 }
 
@@ -175,7 +195,7 @@ fn test_line_comment() {
 #[test]
 fn test_comment_after_tag() {
     let mut iter = read_obj(str_reader("v # comment\n"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "v"));
-    assert!(iter.next().unwrap().unwrap() == (Token::Comment, " comment"));
+    assert!(iter.next().unwrap().unwrap() == Token::Tag("v"));
+    assert!(iter.next().unwrap().unwrap() == Token::Comment(" comment"));
     assert!(iter.next() == None);
 }
