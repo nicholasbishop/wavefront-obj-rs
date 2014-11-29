@@ -8,6 +8,8 @@ use std::io::IoResult;
 pub enum Tag<'a> {
     F,
     V,
+    Vn,
+    Vt,
 
     Unknown(&'a str)
 }
@@ -19,6 +21,10 @@ impl<'a> Tag<'a> {
             Tag::F
         } else if s == "v" {
             Tag::V
+        } else if s == "vn" {
+            Tag::Vn
+        } else if s == "vt" {
+            Tag::Vt
         } else {
             Tag::Unknown(s)
         }
