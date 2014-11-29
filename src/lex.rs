@@ -163,3 +163,19 @@ fn test_tag_no_newline() {
     assert!(iter.next().unwrap().unwrap() == (Token::Tag, "a"));
     assert!(iter.next() == None);
 }
+
+#[test]
+fn test_line_comment() {
+    let mut iter = read_obj(str_reader("# comment\n"));
+    assert!(iter.next().unwrap().unwrap() == (Token::Comment, " comment"));
+    assert!(iter.next() == None);
+}
+
+
+#[test]
+fn test_comment_after_tag() {
+    let mut iter = read_obj(str_reader("v # comment\n"));
+    assert!(iter.next().unwrap().unwrap() == (Token::Tag, "v"));
+    assert!(iter.next().unwrap().unwrap() == (Token::Comment, " comment"));
+    assert!(iter.next() == None);
+}
