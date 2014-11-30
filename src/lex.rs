@@ -1,6 +1,5 @@
 extern crate std;
 
-use std::io::BufferedReader;
 use std::io::IoErrorKind;
 use std::io::IoResult;
 
@@ -39,8 +38,8 @@ impl<'a> Token<'a> {
     }
 }
 
-pub struct TokenIterator<R> {
-    buffered_reader: BufferedReader<R>,
+pub struct TokenIterator<'r> {
+    buffered_reader: &'r mut std::io::Buffer + 'r,
     state: State,
     buffer: String,
     token_type: Option<TokenType>,
@@ -51,7 +50,7 @@ fn comment_char(c: char) -> bool {
     c == '#'
 }
 
-impl<R: Reader> TokenIterator<R> {
+impl<'r> TokenIterator<'r> {
     /// Read a character, updating the iterator state accordingly
     fn push_char(&mut self, c: char) {
         assert!(self.token_type.is_none());
@@ -154,9 +153,9 @@ impl<R: Reader> TokenIterator<R> {
     }
 }
 
-pub fn read_obj<R: Reader>(reader: R) -> TokenIterator<R> {
+pub fn read_obj<'r>(reader: &'r mut Buffer) -> TokenIterator<'r> {
     TokenIterator {
-        buffered_reader: BufferedReader::new(reader),
+        buffered_reader: reader,
         state: State::StartOfLine,
         buffer: String::new(),
         token_type: None,
@@ -169,7 +168,7 @@ fn str_reader(s: &'static str) -> std::io::BufReader {
 }
 
 // TODO
-fn iter_eof<R: Reader>(iter: &mut TokenIterator<R>) -> bool {
+fn iter_eof(iter: &mut TokenIterator) -> bool {
     if let Result::Err(e) = iter.next() {
         e.kind == IoErrorKind::EndOfFile
     } else {
@@ -179,21 +178,24 @@ fn iter_eof<R: Reader>(iter: &mut TokenIterator<R>) -> bool {
 
 #[test]
 fn test_tag() {
-    let mut iter = read_obj(str_reader("v\n"));
+    let mut reader = str_reader("v\n");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter_eof(&mut iter));
 }
 
 #[test]
 fn test_unknown_tag() {
-    let mut iter = read_obj(str_reader("foo\n"));
+    let mut reader = str_reader("foo\n");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Tag(Tag::Unknown("foo")));
     assert!(iter_eof(&mut iter));
 }
 
 #[test]
 fn test_tag_and_arguments() {
-    let mut iter = read_obj(str_reader("v b c\n"));
+    let mut reader = str_reader("v b c\n");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter.next().unwrap() == Token::Argument("b"));
     assert!(iter.next().unwrap() == Token::Argument("c"));
@@ -202,7 +204,8 @@ fn test_tag_and_arguments() {
 
 #[test]
 fn test_arguments_with_extra_space() {
-    let mut iter = read_obj(str_reader("v   b   c\n"));
+    let mut reader = str_reader("v   b   c\n");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter.next().unwrap() == Token::Argument("b"));
     assert!(iter.next().unwrap() == Token::Argument("c"));
@@ -211,21 +214,24 @@ fn test_arguments_with_extra_space() {
 
 #[test]
 fn test_tag_no_newline() {
-    let mut iter = read_obj(str_reader("v"));
+    let mut reader = str_reader("v");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter_eof(&mut iter));
 }
 
 #[test]
 fn test_line_comment() {
-    let mut iter = read_obj(str_reader("# comment\n"));
+    let mut reader = str_reader("# comment\n");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Comment(" comment"));
     assert!(iter_eof(&mut iter));
 }
 
 #[test]
 fn test_comment_after_tag() {
-    let mut iter = read_obj(str_reader("v # comment\n"));
+    let mut reader = str_reader("v # comment\n");
+    let mut iter = read_obj(&mut reader);
     assert!(iter.next().unwrap() == Token::Tag(Tag::V));
     assert!(iter.next().unwrap() == Token::Comment(" comment"));
     assert!(iter_eof(&mut iter));
